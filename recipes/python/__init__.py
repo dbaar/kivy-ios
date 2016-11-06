@@ -7,7 +7,7 @@ import os
 class PythonRecipe(Recipe):
     version = "2.7.1"
     url = "https://www.python.org/ftp/python/{version}/Python-{version}.tar.bz2"
-    depends = ["hostpython", "libffi", ]
+    depends = ["libffi"]
     optional_depends = ["openssl"]
     library = "libpython2.7.a"
     pbx_libraries = ["libz", "libbz2", "libsqlite3"]
@@ -48,7 +48,6 @@ class PythonRecipe(Recipe):
                 "--disable-toolbox-glue",
                 "--host={}-apple-darwin".format(arch),
                 "--prefix=/python",
-                "--with-system-ffi",
                 "--without-doc-strings",
                 _env=build_env)
 
@@ -58,8 +57,8 @@ class PythonRecipe(Recipe):
 
         shprint(sh.make, "-j4",
                 "CROSS_COMPILE_TARGET=yes",
-                "HOSTPYTHON={}".format(self.ctx.hostpython),
-                "HOSTPGEN={}".format(self.ctx.hostpgen))
+                "HOSTPYTHON={}".format(join(self.ctx.dist_dir, "hostpython", "bin", "python")),
+                "HOSTPGEN={}".format(join(self.ctx.dist_dir, "hostpgen", "bin", "python")))
 
     def install(self):
         arch = list(self.filtered_archs)[0]
@@ -70,7 +69,7 @@ class PythonRecipe(Recipe):
                 "-C", build_dir,
                 "install",
                 "CROSS_COMPILE_TARGET=yes",
-                "HOSTPYTHON={}".format(self.ctx.hostpython),
+                "HOSTPYTHON={}".format(join(self.ctx.dist_dir, "hostpython", "bin", "python")),
                 "prefix={}".format(join(self.ctx.dist_dir, "root", "python")),
                 _env=build_env)
         self.reduce_python()

@@ -8,7 +8,7 @@ import shutil
 class HostpythonRecipe(Recipe):
     version = "2.7.1"
     url = "https://www.python.org/ftp/python/{version}/Python-{version}.tar.bz2"
-    depends = ["hostlibffi", ]
+    depends = []
     archs = ["x86_64"]
 
     def init_with_ctx(self, ctx):
@@ -44,6 +44,8 @@ class HostpythonRecipe(Recipe):
             lines[index] = " ".join(parts)
         with open(makefile_fn, "w") as fd:
             fd.writelines(lines)
+        # TODO: patch LDFLAGS
+        # TODO: patch CFLAGS
 
     def build_x86_64(self):
         sdk_path = sh.xcrun("--sdk", "macosx", "--show-sdk-path").strip()

@@ -28,7 +28,6 @@ sys.path.insert(0, join(curdir, "tools", "external"))
 
 import sh
 
-
 IS_PY3 = sys.version_info[0] >= 3
 
 
@@ -39,6 +38,16 @@ def shprint(command, *args, **kwargs):
     for line in command(*args, **kwargs):
         stdout.write(line)
 
+def copytree(src_dir, dst_dir, symlinks=False, ignore=None):
+    if not exists(dst_dir):
+        makedirs(dst_dir)
+    for item in listdir(src_dir):
+        src = join(src_dir, item)
+        dst = join(dst_dir, item)
+        if isdir(src):
+            copytree(src, dst, symlinks, ignore)
+        else:
+            shutil.copy2(src, dst)
 
 def cache_execution(f):
     def _cache_execution(self, *args, **kwargs):
@@ -49,9 +58,10 @@ def cache_execution(f):
             for arg in args:
                 key += ".{}".format(arg)
         key_time = "{}.at".format(key)
-        if key in state and not force:
-            print("# (ignored) {} {}".format(f.__name__.capitalize(), self.name))
-            return
+        #hack always build
+        #if key in state and not force:
+        #    print("# (ignored) {} {}".format(f.__name__.capitalize(), self.name))
+        #    return
         print("{} {}".format(f.__name__.capitalize(), self.name))
         f(self, *args, **kwargs)
         state[key] = True
@@ -174,9 +184,7 @@ class Arch(object):
         env["AR"] = sh.xcrun("-find", "-sdk", self.sdk, "ar").strip()
         env["LD"] = sh.xcrun("-find", "-sdk", self.sdk, "ld").strip()
         env["OTHER_CFLAGS"] = " ".join(include_dirs)
-        env["OTHER_LDFLAGS"] = " ".join([
-            "-L{}/{}".format(self.ctx.dist_dir, "lib"),
-        ])
+        env["OTHER_LDFLAGS"] = " ".join(["-L{}/{}".format(self.ctx.dist_dir, "lib"),])
         env["CFLAGS"] = " ".join([
             "-arch", self.arch,
             "-pipe", "-no-cpp-precomp",
@@ -190,7 +198,6 @@ class Arch(object):
             "-arch", self.arch,
             "--sysroot", self.sysroot,
             "-L{}/{}".format(self.ctx.dist_dir, "lib"),
-            "-lsqlite3",
             self.version_min
         ])
         return env
@@ -647,6 +654,7 @@ class Recipe(object):
             shutil.rmtree(self.build_dir)
             self.extract_arch(arch.arch)
 
+        # hack out-comment to always build
         if self.has_marker("build_done"):
             print("Build python for {} already done.".format(arch.arch))
             return
@@ -837,13 +845,16 @@ class PythonRecipe(Recipe):
 
     @staticmethod
     def remove_junk(d):
-        exts = [".pyc", ".py", ".so.lib", ".so.o", ".sh"]
+        exts = [".pyc", ".py", ".so.lib", ".so.o", ".sh", ".txt", ".egg-info"]
         for root, dirnames, filenames in walk(d):
+            for dn in dirnames:
+                if any([dn.endswith(ext) for ext in exts]):
+                    shutil.rmtree(join(root, dn))
             for fn in filenames:
                 if any([fn.endswith(ext) for ext in exts]):
                     unlink(join(root, fn))
 
-    def install_python_package(self, name=None, env=None, is_dir=True):
+    def install_python_package(self, name=None, env=None, singleVersion=True):
         """Automate the installation of a Python package into the target
         site-packages.
 
@@ -854,26 +865,26 @@ class PythonRecipe(Recipe):
             name = self.name
         if env is None:
             env = self.get_recipe_env(arch)
+
         print("Install {} into the site-packages".format(name))
         build_dir = self.get_build_dir(arch.arch)
         chdir(build_dir)
-        hostpython = sh.Command(self.ctx.hostpython)
+        hostpython = sh.Command(join(self.ctx.dist_dir, "hostpython", "bin", "python"))
         iosbuild = join(build_dir, "iosbuild")
-        shprint(hostpython, "setup.py", "install", "-O2",
-                "--prefix", iosbuild,
-                _env=env)
-        dest_dir = join(self.ctx.site_packages_dir, name)
-        self.remove_junk(iosbuild)
-        if is_dir:
-            if exists(dest_dir):
-                shutil.rmtree(dest_dir)
-            func = shutil.copytree
+        ensure_dir(join(iosbuild, "lib", self.ctx.python_ver_dir, "site-packages"))
+        env['PYTHONPATH'] = ":".join([join(self.ctx.dist_dir, "hostpython", "lib", self.ctx.python_ver_dir, "site-packages"),
+                                      join(iosbuild, "lib", self.ctx.python_ver_dir, "site-packages")])
+
+        if singleVersion:
+            shprint(hostpython, "setup.py", "install", "--single-version-externally-managed", "--root=/", "-O2", "--prefix", iosbuild, _env=env)
         else:
-            func = shutil.copy
-        func(
-            join(iosbuild, "lib",
-                 self.ctx.python_ver_dir, "site-packages", name),
-            dest_dir)
+            shprint(hostpython, "setup.py", "install", "-O2", "--prefix", iosbuild, _env=env)
+
+        self.remove_junk(iosbuild)
+
+        dst_dir = join(self.ctx.site_packages_dir)
+        src_dir = join(iosbuild, "lib", self.ctx.python_ver_dir, "site-packages")
+        copytree(src_dir, dst_dir)
 
     def reduce_python_package(self):
         """Feel free to remove things you don't want in the final
@@ -920,26 +931,24 @@ class CythonRecipe(PythonRecipe):
 
     def build_arch(self, arch):
         build_env = self.get_recipe_env(arch)
-        hostpython = sh.Command(self.ctx.hostpython)
+        hostpython = sh.Command(join(self.ctx.dist_dir, "hostpython", "bin", "python"))
         if self.pre_build_ext:
             try:
-                shprint(hostpython, "setup.py", "build_ext", "-g",
-                        _env=build_env)
+                shprint(hostpython, "setup.py", "build_ext", "-g", _env=build_env)
             except:
                 pass
         self.cythonize_build()
-        shprint(hostpython, "setup.py", "build_ext", "-g",
-                _env=build_env)
+        shprint(hostpython, "setup.py", "build_ext", "-g", _env=build_env)
         self.biglink()
 
 
-def build_recipes(names, ctx):
+def build_recipes(names, ctx, build_deps=True):
     # gather all the dependencies
     print("Want to build {}".format(names))
     graph = Graph()
-    recipe_to_load = names
+    recipe_to_load = list(names)
     recipe_loaded = []
-    while names:
+    while recipe_to_load:
         name = recipe_to_load.pop(0)
         if name in recipe_loaded:
             continue
@@ -970,6 +979,10 @@ def build_recipes(names, ctx):
     recipes = [Recipe.get_recipe(name, ctx) for name in build_order]
     for recipe in recipes:
         recipe.init_with_ctx(ctx)
+
+    if not build_deps:
+        recipes = [Recipe.get_recipe(name, ctx) for name in names]
+
     for recipe in recipes:
         recipe.execute()
 

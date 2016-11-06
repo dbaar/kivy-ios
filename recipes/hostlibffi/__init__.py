@@ -4,6 +4,7 @@ import sh
 
 class LibffiRecipe(Recipe):
     version = "3.2.1"
+    #url = "https://github.com/libffi/libffi/archive/v{version}.zip"
     url = "ftp://sourceware.org/pub/libffi/libffi-{version}.tar.gz"
     library = "build/Release-{arch.sdk}/libffi.a"
     include_per_arch = True

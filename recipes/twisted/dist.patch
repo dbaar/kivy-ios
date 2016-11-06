@@ -1,0 +1,23 @@
+--- twisted-twisted-16.4.1/twisted/python/dist.py	2016-10-16 15:19:42.000000000 +0200
++++ twisted-twisted-16.4.1-orig/twisted/python/dist.py	2016-09-07 11:52:31.000000000 +0200
+@@ -208,13 +208,13 @@
+             sources=["twisted/python/_sendmsg.c"],
+             condition=lambda _: not _PY3 and sys.platform != "win32"
+         ),
+-        # ConditionalExtension(
+-        #     "twisted.runner.portmap",
+-        #     ["twisted/runner/portmap.c"],
+-        #     condition=(
+-        #         lambda builder: not _PY3 and builder._check_header("rpc/rpc.h")
+-        #     )
+-        # ),
++        ConditionalExtension(
++            "twisted.runner.portmap",
++            ["twisted/runner/portmap.c"],
++            condition=(
++                lambda builder: not _PY3 and builder._check_header("rpc/rpc.h")
++            )
++        ),
+     ]
+ 
+     return extensions

@@ -1,0 +1,30 @@
+--- autobahn-python-0.15.0/autobahn/websocket/protocol.py	2016-07-19 15:25:20.000000000 +0200
++++ autobahn-python-0.15.0-patched/autobahn/websocket/protocol.py	2016-10-27 23:26:08.000000000 +0200
+@@ -55,7 +55,15 @@
+ from autobahn.websocket.compress import PERMESSAGE_COMPRESSION_EXTENSION
+ from autobahn.websocket.util import parse_url
+ 
+-from six.moves import urllib
++#
++if not six.PY3:
++    # Python 2
++    import urlparse
++else:
++    # Python 3
++    from urllib import parse as urlparse
++
++
+ import txaio
+ 
+ if six.PY3:
+diff -ruN autobahn-python-0.15.0/autobahn/websocket/util.py autobahn-python-0.15.0-patched/autobahn/websocket/util.py
+--- autobahn-python-0.15.0/autobahn/websocket/util.py	2016-07-19 15:25:20.000000000 +0200
++++ autobahn-python-0.15.0-patched/autobahn/websocket/util.py	2016-10-27 20:47:57.000000000 +0200
+@@ -27,7 +27,6 @@
+ from __future__ import absolute_import
+ 
+ import six
+-from six.moves import urllib
+ # The Python urlparse module currently does not contain the ws/wss
+ # schemes, so we add those dynamically (which is a hack of course).
+ # Since the urllib from six.moves does not seem to expose the stuff
