@@ -44,8 +44,7 @@ class HostpythonRecipe(Recipe):
             lines[index] = " ".join(parts)
         with open(makefile_fn, "w") as fd:
             fd.writelines(lines)
-        # TODO: patch LDFLAGS
-        # TODO: patch CFLAGS
+        # TODO: clear CFLAGS + LDFLAGS in makefile
 
     def build_x86_64(self):
         sdk_path = sh.xcrun("--sdk", "macosx", "--show-sdk-path").strip()

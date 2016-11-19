@@ -58,10 +58,10 @@ def cache_execution(f):
             for arg in args:
                 key += ".{}".format(arg)
         key_time = "{}.at".format(key)
-        #hack always build
-        #if key in state and not force:
-        #    print("# (ignored) {} {}".format(f.__name__.capitalize(), self.name))
-        #    return
+        #hack: out-comment to always build
+        if key in state and not force:
+            print("# (ignored) {} {}".format(f.__name__.capitalize(), self.name))
+            return
         print("{} {}".format(f.__name__.capitalize(), self.name))
         f(self, *args, **kwargs)
         state[key] = True
@@ -654,7 +654,7 @@ class Recipe(object):
             shutil.rmtree(self.build_dir)
             self.extract_arch(arch.arch)
 
-        # hack out-comment to always build
+        # hack: out-comment to always build
         if self.has_marker("build_done"):
             print("Build python for {} already done.".format(arch.arch))
             return

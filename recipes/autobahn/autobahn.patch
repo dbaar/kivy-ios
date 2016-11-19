@@ -1,6 +1,7 @@
---- autobahn-python-0.15.0/autobahn/websocket/protocol.py	2016-07-19 15:25:20.000000000 +0200
-+++ autobahn-python-0.15.0-patched/autobahn/websocket/protocol.py	2016-10-27 23:26:08.000000000 +0200
-@@ -55,7 +55,15 @@
+diff -rupN autobahn-python-0.15.0/autobahn/websocket/protocol.py autobahn-python-0.15.0-patched/autobahn/websocket/protocol.py
+--- autobahn-python-0.15.0/autobahn/websocket/protocol.py	2016-07-19 07:25:20.000000000 +0200
++++ autobahn-python-0.15.0-patched/autobahn/websocket/protocol.py	2016-11-19 13:25:19.000000000 +0100
+@@ -55,7 +55,15 @@ from autobahn.websocket.xormasker import
  from autobahn.websocket.compress import PERMESSAGE_COMPRESSION_EXTENSION
  from autobahn.websocket.util import parse_url
  
@@ -17,9 +18,9 @@
  import txaio
  
  if six.PY3:
-diff -ruN autobahn-python-0.15.0/autobahn/websocket/util.py autobahn-python-0.15.0-patched/autobahn/websocket/util.py
---- autobahn-python-0.15.0/autobahn/websocket/util.py	2016-07-19 15:25:20.000000000 +0200
-+++ autobahn-python-0.15.0-patched/autobahn/websocket/util.py	2016-10-27 20:47:57.000000000 +0200
+diff -rupN autobahn-python-0.15.0/autobahn/websocket/util.py autobahn-python-0.15.0-patched/autobahn/websocket/util.py
+--- autobahn-python-0.15.0/autobahn/websocket/util.py	2016-07-19 07:25:20.000000000 +0200
++++ autobahn-python-0.15.0-patched/autobahn/websocket/util.py	2016-11-19 13:33:14.000000000 +0100
 @@ -27,7 +27,6 @@
  from __future__ import absolute_import
  
@@ -28,3 +29,38 @@ diff -ruN autobahn-python-0.15.0/autobahn/websocket/util.py autobahn-python-0.15
  # The Python urlparse module currently does not contain the ws/wss
  # schemes, so we add those dynamically (which is a hack of course).
  # Since the urllib from six.moves does not seem to expose the stuff
+@@ -38,6 +37,7 @@ from six.moves import urllib
+ #
+ if not six.PY3:
+     # Python 2
++    import urllib
+     import urlparse
+ else:
+     # Python 3
+@@ -93,14 +93,14 @@ def create_url(hostname, port=None, isSe
+     else:
+         scheme = "ws"
+     if path is not None:
+-        ppath = urllib.parse.quote(path)
++        ppath = urllib.quote(path)
+     else:
+         ppath = "/"
+     if params is not None:
+-        query = urllib.parse.urlencode(params)
++        query = urllib.urlencode(params)
+     else:
+         query = None
+-    return urllib.parse.urlunparse((scheme, netloc, ppath, None, query, None))
++    return urlparse.urlunparse((scheme, netloc, ppath, None, query, None))
+ 
+ 
+ def parse_url(url):
+@@ -138,7 +138,7 @@ def parse_url(url):
+         raise Exception("invalid WebSocket URL: non-empty fragment '%s" % parsed.fragment)
+     if parsed.path is not None and parsed.path != "":
+         ppath = parsed.path
+-        path = urllib.parse.unquote(ppath)
++        path = urllib.unquote(ppath)
+     else:
+         ppath = "/"
+         path = ppath
