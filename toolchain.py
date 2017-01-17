@@ -857,7 +857,7 @@ class PythonRecipe(Recipe):
                 if any([fn.endswith(ext) for ext in exts]):
                     unlink(join(root, fn))
 
-    def install_python_package(self, name=None, env=None, singleVersion=True):
+    def install_python_package(self, name=None, env=None, singleVersion=False):
         """Automate the installation of a Python package into the target
         site-packages.
 
