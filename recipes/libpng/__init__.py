@@ -4,8 +4,8 @@ from os.path import join
 import sh
 
 class PngRecipe(Recipe):
-    version = '1.6.26'
-    url = 'http://downloads.sourceforge.net/sourceforge/libpng/libpng-{version}.tar.gz'
+    version = '1.6.28'
+    url = 'ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-{version}.tar.gz'
     depends = ["python"]
     library = '.libs/libpng16.a'
 

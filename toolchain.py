@@ -420,8 +420,10 @@ class Recipe(object):
         # Clean up temporary files just in case before downloading.
         urlcleanup()
 
-        print('Downloading {0}'.format(url))
+        print('Downloading {0} to {1}'.format(url, filename))
+
         urlretrieve(url, filename, report_hook)
+
         return filename
 
     def extract_file(self, filename, cwd):
@@ -880,6 +882,8 @@ class PythonRecipe(Recipe):
         ensure_dir(join(iosbuild, "lib", self.ctx.python_ver_dir, "site-packages"))
         env['PYTHONPATH'] = ":".join([join(self.ctx.dist_dir, "hostpython", "lib", self.ctx.python_ver_dir, "site-packages"),
                                       join(iosbuild, "lib", self.ctx.python_ver_dir, "site-packages")])
+
+        print (env);
 
         if singleVersion:
             shprint(hostpython, "setup.py", "install", "--single-version-externally-managed", "--root=/", "-O2", "--prefix", iosbuild, _env=env)
